@@ -1,0 +1,32 @@
+name: Lab 7 Kubernetes Cluster Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-cluster:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.30.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+      - name: Create Kubernetes cluster
+        run: kind create cluster --name lab7
+
+      - name: Check nodes
+        run: kubectl get nodes -o wide
+
+      - name: Check system pods
+        run: kubectl get pods -A
+
+      - name: Check available resources
+        run: |
+          free -h
+          df -h .
