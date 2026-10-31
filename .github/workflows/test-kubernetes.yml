@@ -26,6 +26,16 @@ jobs:
       - name: Check system pods
         run: kubectl get pods -A
 
+
+      - name: Deploy and test Redis
+        run: |
+          kubectl apply -f redis/redis-deployment.yaml
+          kubectl apply -f redis/redis-service.yaml
+          kubectl rollout status deployment/redis --timeout=120s
+          kubectl get pods -o wide
+          kubectl get services
+          kubectl exec deployment/redis -- redis-cli ping
+
       - name: Check available resources
         run: |
           free -h
