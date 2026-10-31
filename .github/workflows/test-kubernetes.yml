@@ -37,6 +37,11 @@ jobs:
           kubectl exec deployment/redis -- redis-cli ping
 
 
+      - name: Check MinIO image availability
+        run: |
+          docker pull dappros/minio:RELEASE.2025-09-07T16-13-09Z
+          docker image inspect dappros/minio:RELEASE.2025-09-07T16-13-09Z --format '{{.Id}}'
+
       - name: Deploy and test MinIO
         run: |
           PASSWORD=$(openssl rand -hex 24)
