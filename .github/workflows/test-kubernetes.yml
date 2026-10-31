@@ -190,6 +190,12 @@ jobs:
           kubectl get events --sort-by=.metadata.creationTimestamp | tail -30 || true
 
 
+
+      - name: Test final deploy script
+        run: |
+          sh deploy-all.sh
+          echo "FINAL DEPLOY SCRIPT PASSED"
+
       - name: Validate REST Ingress
         run: |
           kubectl apply --dry-run=client -f rest/rest-ingress.yaml
