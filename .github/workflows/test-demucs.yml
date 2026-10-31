@@ -13,7 +13,7 @@ jobs:
 
       - name: Check sample file
         run: |
-          ls -lh data/data/short-dreams.mp3
+          ls -lh data/short-dreams.mp3
           df -h .
 
       - name: Build Worker image
@@ -26,7 +26,7 @@ jobs:
           docker run --rm \
             --memory=10g \
             --cpus=4 \
-            -v "$PWD/data/data:/input:ro" \
+            -v "$PWD/data:/input:ro" \
             -v "$PWD/demucs-test-output:/output" \
             --entrypoint python \
             lab7-worker:test \
