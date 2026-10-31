@@ -189,6 +189,14 @@ jobs:
           kubectl logs deployment/rest --tail=40 || true
           kubectl get events --sort-by=.metadata.creationTimestamp | tail -30 || true
 
+
+      - name: Validate REST Ingress
+        run: |
+          kubectl apply --dry-run=client -f rest/rest-ingress.yaml
+          kubectl apply -f rest/rest-ingress.yaml
+          kubectl get ingress frontend-ingress
+          echo "INGRESS MANIFEST VALIDATED"
+
       - name: Check available resources
         run: |
           free -h
