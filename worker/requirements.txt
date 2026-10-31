@@ -1,0 +1,4 @@
+demucs==4.0.1
+redis==8.1.0
+minio==7.2.20
+requests==2.34.2

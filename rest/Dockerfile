@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY rest/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY rest/rest-server.py .
+
+ENV REST_BIND_HOST=0.0.0.0
+ENV REST_PORT=5000
+
+EXPOSE 5000
+
+CMD ["python", "rest-server.py"]
