@@ -58,6 +58,25 @@ jobs:
 
           echo "MINIO KUBERNETES TEST PASSED"
 
+
+      - name: Diagnose MinIO failure
+        if: failure()
+        run: |
+          echo "===== POD STATUS ====="
+          kubectl get pods -o wide || true
+
+          echo "===== MINIO POD DETAILS ====="
+          kubectl describe pods -l app=minio || true
+
+          echo "===== MINIO LOGS ====="
+          kubectl logs deployment/minio --all-containers=true --tail=100 || true
+
+          echo "===== PREVIOUS LOGS ====="
+          kubectl logs deployment/minio --previous --tail=100 || true
+
+          echo "===== KUBERNETES EVENTS ====="
+          kubectl get events --sort-by=.metadata.creationTimestamp || true
+
       - name: Check available resources
         run: |
           free -h
