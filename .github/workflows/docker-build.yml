@@ -1,0 +1,25 @@
+name: Lab 7 Docker Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'rest/**'
+      - 'worker/**'
+      - '.github/workflows/docker-build.yml'
+
+jobs:
+  build-rest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build REST image
+        run: docker build -f rest/Dockerfile -t lab7-rest:test .
+
+  build-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Worker image
+        run: docker build -f worker/Dockerfile -t lab7-worker:test .
