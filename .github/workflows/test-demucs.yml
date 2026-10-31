@@ -1,0 +1,57 @@
+name: Lab 7 Real Demucs Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-demucs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check sample file
+        run: |
+          ls -lh data/data/short-dreams.mp3
+          df -h .
+
+      - name: Build Worker image
+        run: |
+          docker build -f worker/Dockerfile -t lab7-worker:test .
+
+      - name: Run real Demucs on sample
+        run: |
+          mkdir -p demucs-test-output
+          docker run --rm \
+            --memory=10g \
+            --cpus=4 \
+            -v "$PWD/data/data:/input:ro" \
+            -v "$PWD/demucs-test-output:/output" \
+            --entrypoint python \
+            lab7-worker:test \
+            -m demucs.separate \
+            --mp3 \
+            --name htdemucs \
+            --out /output \
+            /input/short-dreams.mp3
+
+      - name: Verify four MP3 tracks
+        run: |
+          for track in bass drums vocals other; do
+            file=$(find demucs-test-output -name "$track.mp3" -type f -print -quit)
+            test -n "$file"
+            test -s "$file"
+            ffprobe -v error -show_entries format=duration \
+              -of default=noprint_wrappers=1 "$file"
+            echo "PASS: $track.mp3"
+          done
+          echo "ALL FOUR REAL DEMUCS TRACKS VERIFIED"
+
+      - name: Upload test output
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demucs-real-output
+          path: demucs-test-output/
+          retention-days: 7
