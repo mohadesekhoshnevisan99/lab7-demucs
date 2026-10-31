@@ -36,6 +36,28 @@ jobs:
           kubectl get services
           kubectl exec deployment/redis -- redis-cli ping
 
+
+      - name: Deploy and test MinIO
+        run: |
+          PASSWORD=$(openssl rand -hex 24)
+          kubectl create secret generic minio-auth \
+            --from-literal=username=lab7admin \
+            --from-literal=password="$PASSWORD"
+
+          kubectl apply -f minio/minio-deployment.yaml
+          kubectl apply -f minio/minio-service.yaml
+
+          kubectl rollout status deployment/minio --timeout=180s
+          kubectl get pods
+          kubectl get service minio
+
+          kubectl run minio-check --rm -i \
+            --restart=Never \
+            --image=curlimages/curl:8.11.1 \
+            -- http://minio:9000/minio/health/live
+
+          echo "MINIO KUBERNETES TEST PASSED"
+
       - name: Check available resources
         run: |
           free -h
