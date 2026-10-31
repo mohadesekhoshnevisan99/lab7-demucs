@@ -102,6 +102,93 @@ jobs:
 
           echo "REST KUBERNETES TEST PASSED"
 
+
+      - name: Initialize MinIO buckets
+        run: |
+          kubectl exec deployment/rest -- python -c '
+          import os
+          from minio import Minio
+          m = Minio("minio:9000",
+              access_key=os.environ["MINIO_ACCESS_KEY"],
+              secret_key=os.environ["MINIO_SECRET_KEY"],
+              secure=False)
+          for bucket in ("queue", "output"):
+              if not m.bucket_exists(bucket):
+                  m.make_bucket(bucket)
+              print("Ready:", bucket)
+          '
+
+      - name: Build and deploy Worker
+        run: |
+          docker build -f worker/Dockerfile -t lab7-worker:test .
+          kind load docker-image lab7-worker:test --name lab7
+          kubectl apply -f worker/worker-deployment.yaml
+          kubectl rollout status deployment/worker --timeout=180s
+          kubectl get pods -o wide
+          echo "WORKER DEPLOYED"
+
+      - name: Full end-to-end MP3 test
+        timeout-minutes: 10
+        run: |
+          kubectl port-forward service/rest 5000:5000 > /tmp/rest-forward.log 2>&1 &
+          sleep 5
+          python - <<'TEST'
+          import base64, json, time, urllib.request
+          from pathlib import Path
+
+          base = "http://127.0.0.1:5000"
+          mp3 = Path("data/short-dreams.mp3").read_bytes()
+
+          payload = json.dumps({
+              "mp3": base64.b64encode(mp3).decode()
+          }).encode()
+
+          req = urllib.request.Request(
+              base + "/apiv1/separate",
+              data=payload,
+              headers={"Content-Type": "application/json"},
+              method="POST"
+          )
+          with urllib.request.urlopen(req, timeout=30) as r:
+              result = json.load(r)
+
+          songhash = result["hash"]
+          print("Song hash:", songhash, flush=True)
+
+          tracks = ("bass", "drums", "vocals", "other")
+          deadline = time.monotonic() + 420
+
+          while time.monotonic() < deadline:
+              completed = []
+              for track in tracks:
+                  url = f"{base}/apiv1/track/{songhash}/{track}.mp3"
+                  try:
+                      with urllib.request.urlopen(url, timeout=20) as r:
+                          audio = r.read()
+                      if len(audio) > 1000:
+                          completed.append(track)
+                  except Exception:
+                      pass
+
+              print("Available tracks:", completed, flush=True)
+              if len(completed) == 4:
+                  print("FULL END-TO-END TEST PASSED", flush=True)
+                  break
+
+              time.sleep(15)
+          else:
+              raise RuntimeError("Four real MP3 outputs were not ready")
+          TEST
+
+      - name: Show final Kubernetes evidence
+        if: always()
+        run: |
+          kubectl get pods -o wide || true
+          kubectl get deployments,services || true
+          kubectl logs deployment/worker --tail=100 || true
+          kubectl logs deployment/rest --tail=40 || true
+          kubectl get events --sort-by=.metadata.creationTimestamp | tail -30 || true
+
       - name: Check available resources
         run: |
           free -h

@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: lab7-worker:test
+          imagePullPolicy: Never
+          env:
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
+            - name: MINIO_ENDPOINT
+              value: minio:9000
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-auth
+                  key: username
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-auth
+                  key: password
+            - name: OMP_NUM_THREADS
+              value: "2"
+          resources:
+            requests:
+              memory: 2Gi
+              cpu: 500m
+            limits:
+              memory: 8Gi
+              cpu: "4"
