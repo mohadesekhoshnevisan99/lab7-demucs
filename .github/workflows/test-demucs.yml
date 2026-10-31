@@ -42,8 +42,13 @@ jobs:
             file=$(find demucs-test-output -name "$track.mp3" -type f -print -quit)
             test -n "$file"
             test -s "$file"
-            ffprobe -v error -show_entries format=duration \
-              -of default=noprint_wrappers=1 "$file"
+            docker run --rm \
+            -v "$PWD/demucs-test-output:/output:ro" \
+            --entrypoint ffprobe \
+            lab7-worker:test \
+            -v error -show_entries format=duration \
+            -of default=noprint_wrappers=1 \
+            "/output/${file#demucs-test-output/}"
             echo "PASS: $track.mp3"
           done
           echo "ALL FOUR REAL DEMUCS TRACKS VERIFIED"
