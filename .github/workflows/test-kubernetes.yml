@@ -82,6 +82,26 @@ jobs:
           echo "===== KUBERNETES EVENTS ====="
           kubectl get events --sort-by=.metadata.creationTimestamp || true
 
+
+      - name: Build and deploy REST
+        run: |
+          docker build -f rest/Dockerfile -t lab7-rest:test .
+          kind load docker-image lab7-rest:test --name lab7
+
+          kubectl apply -f rest/rest-deployment.yaml
+          kubectl apply -f rest/rest-service.yaml
+
+          kubectl rollout status deployment/rest --timeout=120s
+          kubectl get pods
+          kubectl get service rest
+
+          kubectl run rest-check --rm -i \
+            --restart=Never \
+            --image=curlimages/curl:8.11.1 \
+            -- http://rest:5000/
+
+          echo "REST KUBERNETES TEST PASSED"
+
       - name: Check available resources
         run: |
           free -h
